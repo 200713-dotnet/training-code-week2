@@ -136,4 +136,4 @@ go
 
 -- TRANSACTION
 
--- ORM + Entity Framework Core
+-- ORM + Entity Framework Core + Data-first Approach
