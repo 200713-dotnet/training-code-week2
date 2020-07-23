@@ -1,0 +1,2 @@
+FROM mcr.microsoft.com/mssql/server:2017-latest
+COPY AdventureWorks2017.bak /var/opt/mssql/data/
