@@ -19,7 +19,7 @@ go
 
 create table Pizza.Pizza
 (
-  PizzaId int not null primary key,
+  PizzaId int not null primary key, -- identity(seed, step)
   CrustId int null foreign key references Pizza.Crust(CrustId), -- least likely
   SizeId int null,
   [Name] nvarchar(250) not null,
