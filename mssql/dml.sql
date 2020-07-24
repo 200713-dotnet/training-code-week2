@@ -125,6 +125,23 @@ drop view vw_getpersons;
 go
 
 -- FUNCTION
+--scalar = returns a value
+create function fn_getname(@id int)
+returns nvarchar(250)
+as
+begin
+  -- what is the value of null
+  -- why is coalesce a solution?
+  
+  declare @result NVARCHAR(250);
+  select @result = firstname + ' ' + middlename + ' ' + lastname -- isnull
+  from vw_getpersons
+  where businessentityid = id
+
+  return @result;
+end;
+
+--tabular = returns 1 or more records
 
 -- STORED PROCEDURE
 
