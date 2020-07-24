@@ -130,27 +130,154 @@ create function fn_getname(@id int)
 returns nvarchar(250)
 as
 begin
-  -- what is the value of null
+  -- what is the value of null, null = value not available and value not given
   -- why is coalesce a solution?
-  
-  declare @result NVARCHAR(250);
-  select @result = firstname + ' ' + middlename + ' ' + lastname -- isnull
-  from vw_getpersons
-  where businessentityid = id
+
+  declare @result nvarchar(250);
+  select @result = firstname + coalesce(' ' + middlename + ' ', ' ') + lastname -- coalesce, isnull(t-sql) 
+  from Person.Person
+  where businessentityid = @id
 
   return @result;
 end;
+go
+
+create function fn_fullname(@first nvarchar(200), @last nvarchar(200))
+returns nvarchar(401)
+as
+begin
+  return @first + ' ' + @last
+end;
+go
+
+
+select dbo.fn_getname(100);
+go
+
+select dbo.fn_fullname(firstname, lastname) as FullName
+from Person.Person;
+go
 
 --tabular = returns 1 or more records
+create function fn_getpeople(@first nvarchar(200))
+returns table
+as
+return
+  select firstname, lastname
+  from Person.Person
+  where firstname = @first
+go
+
+select * from dbo.fn_getpeople();
+go
 
 -- STORED PROCEDURE
+create proc sp_insertperson(@first nvarchar, @last nvarchar)
+as
+begin
+  --validate first, last
+  --validate duplicate
+  --insert
+  begin tran
+    -- Atomic = should affect 1 record set and it should complete
+    -- Consistent  = should be the same record set if repeated with same result
+    -- Isolated = isolation levels, should not have side effects
+    -- Durable = should be saved entirely
+    -- ACID Properties
 
--- JOIN
+    if(@first is not null and @last is not null)
+    begin
+      declare @result int;
 
--- UNION
+      select @result = BusinessEntityID
+      from Person.Person
+      where FirstName = @first and LastName = @last;
+
+      if (@result is null)
+      begin
+
+        CHECKPOINT;
+        insert into Person.Person(FirstName, LastName)
+        values (@first, @last);
+        commit tran;
+
+        -- Isolation Levels (isolating read from edit/delete)
+        -- READ UNCOMMITED = dirty read, any record in the table complete or not
+        -- READ COMMITED = clean read, only completed records can be read
+        -- REPEATABLE READ = clean read, only the latest snapshot can be read
+        -- SERIALIZABLE = clean read, dataset is locked from edit/delete
+      end
+      else
+      begin
+        rollback tran;
+      end
+    end
+end;
+go
+
+-- JOIN = based on keys
+--inner -> inner
+--outer -> full, left, right
+--cross
+--self
+select pp.firstname, pp.lastname, pa.AddressLine1, pa.City
+from Person.Person as pp
+inner join Person.BusinessEntityAddress as bea on bea.BusinessEntityID = pp.BusinessEntityID
+left join Person.Address as pa on pa.AddressID = bea.AddressID
+where pp.FirstName = 'john';
+
+-- UNION = based on datatypes
+select firstname
+from Person.Person
+union -- filter duplicates, unique record set
+select name
+from Production.Product;
+
+select firstname
+from Person.Person
+union all -- no filter
+select name
+from Production.Product;
+
+select firstname
+from Person.Person
+intersect -- common record set
+select name
+from Production.Product;
+
+select firstname
+from Person.Person
+except -- exclusive record set, distinct
+select name
+from Production.Product;
+go
 
 -- TRIGGER
+-- before = intercept event, and run pre-query ahead of event
+-- for = intercept event, and run post-query after event
+-- instead of = intercept event, and run new-query, event dismissed
+
+create trigger tr_switchname
+on Person.Person
+for insert
+as
+  declare @first nvarchar;
+  declare @last nvarchar;
+
+  select @first = firstname, @last = lastname
+  from inserted; -- inserted, deleted = special tables to capture insert/update/delete events on a table
+
+  update Person.Person
+  set firstname = @last, lastname = @first
+  where firstname = @first and LastName = @last
 
 -- TRANSACTION
+-- ACID, COMMIT, ROLLBACK, *CHECKPOINT*
 
 -- ORM + Entity Framework Core + Data-first Approach
+-- ORM = object relational mapper
+-- ODBC connector = open db connector (serialization - XML)
+-- ADO.NET library to interface with ODBC
+-- in C# we write SQL as string > ADO.NET > Execute Query > Record Set
+
+

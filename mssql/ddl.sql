@@ -8,6 +8,9 @@ go
 create database PizzaStoreDb; --project
 go
 
+create schema Order;
+go
+
 create schema Pizza; --namespace
 go
 
